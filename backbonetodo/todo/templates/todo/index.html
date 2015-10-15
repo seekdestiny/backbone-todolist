@@ -13,17 +13,18 @@
       </div>      
     </header>
     <section id="main">
-      <ul id="todo-list">
-	      <script type="text/template" id="item-template">
-             <div class="view">
-                 <input class="toggle" type="checkbox" <%= completed ? 'checked' : '' %>>
-                 <label><%- title %></label>
-                 <input class="edit" type="text" value="<%- title %>">
-                 <button class="destroy">remove</button>
-             </div>
-          </script>
-	  </ul>
+      <ul id="todo-list"></ul>
     </section>
 </section>
+
+<script type="text/script" id="item-template">
+    <div class="view">
+        <input class="toggle" type="checkbox" <%= complete ? 'checked' : '' %>>
+        <label><%- title %></label>
+        <input class="edit" value="<%- title %>">
+        <button class="destroy">remove</button>
+    </div>
+</script>
+
 
 {% endblock %}
