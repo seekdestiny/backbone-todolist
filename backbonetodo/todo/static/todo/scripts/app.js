@@ -1,28 +1,40 @@
-var app = app || {}; // create namespace for our app
-
 $(function() {
     //--------------
     // Models
     //--------------
-    app.Todo = Backbone.Model.extend({
+    var Todo = Backbone.Model.extend({
       defaults: {
         title: '',
         completed: false
       },
-      toggle: function(){
-        this.save({ completed: !this.get('completed')});
+
+     // url: function() {
+       //   var id = this.id || '';
+		 // return "/api/item/"+id;
+//	  }
+
+      initialize: function() {
+          if(!this.get("title")){
+              this.set({"title", this.defaults.title});
+		  }
+	  },
+
+      toggle: function() {
+        this.save({ "completed": !this.get("completed")});
       }
     });
 
     //--------------
     // Collections
     //--------------
-    app.TodoList = Backbone.Collection.extend({
-      model: app.Todo,
-      localStorage: new Store("backbone-todo"),
+    var TodoList = Backbone.Collection.extend({
+      model: Todo,
+
+	  url: "/api/item",
+
       completed: function() {
-        return this.filter(function( todo ) {
-          return todo.get('completed');
+        return this.filter(function( item ) {
+          return item.get('completed');
         });
       },
       remaining: function() {
@@ -31,25 +43,24 @@ $(function() {
     });
 
     // instance of the Collection
-    app.todoList = new app.TodoList();
+    var todoList = new TodoList();
 
     //--------------
     // Views
     //--------------
     
     // renders individual todo items list (li)
-    app.TodoView = Backbone.View.extend({
+    var TodoView = Backbone.View.extend({
       tagName: 'li',
       template: _.template($('#item-template').html()),
-      render: function(){
-        this.$el.html(this.template(this.model.toJSON()));
-        this.input = this.$('.edit');
-        return this; // enable chained calls
-      },
+
       initialize: function(){
+	     _.bindAll(this, "render", "remove", "edit", "updateOnEnter");
         this.model.on('change', this.render, this);
         this.model.on('destroy', this.remove, this); // remove: Convenience Backbone's function for removing the view from the DOM.
-      },      
+		this.input = this.$('.edit input');
+      },  
+
       events: {
         'dblclick label' : 'edit',
         'keypress .edit' : 'updateOnEnter',
@@ -57,25 +68,36 @@ $(function() {
         'click .toggle': 'toggleCompleted',
         'click .destroy': 'destroy'
       },
+
+      render: function(){
+        $(this.el).html(this.template(this.model.toJSON()));
+        this.input = this.$('.edit input');
+        return this; // enable chained calls
+      },
+
       edit: function(){
         this.$el.addClass('editing');
         this.input.focus();
       },
+
       close: function(){
         var value = this.input.val().trim();
         if(value) {
-          this.model.save({title: value});
+          this.model.save({"title": value});
         }
         this.$el.removeClass('editing');
       },
-      updateOnEnter: function(e){
+
+      updateOnEnter: function(event){
         if(e.which == 13){
           this.close();
         }
       },
+
       toggleCompleted: function(){
         this.model.toggle();
       },
+
       destroy: function(){
         this.model.destroy();
       }      
@@ -84,11 +106,13 @@ $(function() {
     // renders the full list of todo items calling TodoView for each one.
     app.AppView = Backbone.View.extend({
       el: '#todoapp',
+
       initialize: function () {
+	    _.bindAll(this, "createOnEnter", "addOne", "addAll", "render");
         this.input = this.$('#new-todo');
         app.todoList.on('add', this.addAll, this);
         app.todoList.on('reset', this.addAll, this);
-        app.todoList.fetch(); // Loads list from local storage
+        var result = app.todoList.fetch(); // Loads list from local storage
       },
       events: {
         'keypress #new-todo': 'createTodoOnEnter'
@@ -100,24 +124,24 @@ $(function() {
         app.todoList.create(this.newAttributes());
         this.input.val(''); // clean input box
       },
-      addOne: function(todo){
-        var view = new app.TodoView({model: todo});
-        $('#todo-list').append(view.render().el);
+      addOne: function(item){
+        var view = new app.TodoView({model: item});
+        this.$('#todo-list').append(view.render().el);
       },
       addAll: function(){
-        this.$('#todo-list').html(''); // clean the todo list
+     //   this.$('#todo-list').html(''); // clean the todo list
         // filter todo item list
-        switch(window.filter){
-          case 'pending':
-            _.each(app.todoList.remaining(), this.addOne);
-            break;
-          case 'completed':
-            _.each(app.todoList.completed(), this.addOne);
-            break;            
-          default:
+        //switch(window.filter){
+        //  case 'pending':
+      //      _.each(app.todoList.remaining(), this.addOne);
+      //      break;
+     //     case 'completed':
+     //       _.each(app.todoList.completed(), this.addOne);
+    //        break;            
+    //      default:
             app.todoList.each(this.addOne, this);
-            break;
-        }
+    //        break;
+     //   }
       },
       newAttributes: function(){
         return {
